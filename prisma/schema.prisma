@@ -1,0 +1,254 @@
+// Prisma schema for the Kids Tech Academy Portfolio & Progress Management System.
+//
+// Default datasource is SQLite for zero-config local development.
+// To use Supabase/PostgreSQL in production: change provider below to "postgresql"
+// and set DATABASE_URL in .env to your Postgres connection string, then run
+// `npx prisma migrate dev`.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         String   // "ADMIN" | "CHILD" (validated in src/lib/zod-schemas.ts)
+  child        Child?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Child {
+  id            String   @id @default(cuid())
+  userId        String?  @unique
+  user          User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  fullName      String
+  parentName    String
+  parentPhone   String
+  parentEmail   String?
+  age           Int
+  dateOfBirth   DateTime?
+  notes         String?
+
+  // ---- Student-management / parent-contact fields ----
+  emergencyContactName  String?
+  emergencyContactPhone String?
+  schoolName            String?
+  preferredTrack        String?  // "ROBOTICS" | "PROGRAMMING" (see src/lib/enums.ts)
+  skillLevel            String?  // "BEGINNER" | "INTERMEDIATE" | "ADVANCED" (see src/lib/enums.ts)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  enrollments    Enrollment[]
+  attendances    Attendance[]
+  portfolioItems PortfolioItem[]
+  payments       Payment[]
+  childBadges    ChildBadge[]
+  childNotes     ChildNote[]
+
+  @@index([parentPhone, fullName])
+}
+
+// Internal admin-only note history for a child (behavior, progress, payment
+// follow-ups, parent communication, etc). Kept separate from the short
+// free-text Child.notes field so admins get a full dated, typed history
+// instead of a single overwritable blob.
+model ChildNote {
+  id        String   @id @default(cuid())
+  childId   String
+  child     Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
+  note      String
+  type      String   @default("GENERAL") // GENERAL | BEHAVIOR | PROGRESS | PAYMENT | PARENT_COMMUNICATION
+  createdBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([childId, createdAt])
+}
+
+model Course {
+  id          String   @id @default(cuid())
+  name        String
+  track       String   // "ROBOTICS" | "PROGRAMMING"
+  minAge      Int
+  maxAge      Int
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  levels      CourseLevel[]
+  enrollments Enrollment[]
+  portfolioItems PortfolioItem[]
+}
+
+model CourseLevel {
+  id          String   @id @default(cuid())
+  courseId    String
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  levelNumber Int
+  name        String
+  description String?
+  price       Float?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  sessions        CourseSession[]
+  enrollmentsHere Enrollment[]    @relation("CurrentLevel")
+  payments        Payment[]
+  portfolioItems  PortfolioItem[]
+
+  @@unique([courseId, levelNumber])
+}
+
+model CourseSession {
+  id               String     @id @default(cuid())
+  levelId          String
+  level            CourseLevel @relation(fields: [levelId], references: [id], onDelete: Cascade)
+  sessionNumber    Int
+  title            String
+  description      String?
+  outputType       String     // "ROBOT" | "APP" | "GAME" | "STORY" | "PROJECT" | "OTHER"
+  outputName       String
+  outputDescription String?
+
+  // Photo of the real product/output the child makes (or is expected to make)
+  // in this session. Shown to the admin when building the course structure and
+  // to the child on their dashboard/progress/portfolio pages. Copied onto the
+  // auto-created PortfolioItem.mediaUrl when attendance is marked PRESENT — see
+  // src/lib/portfolio.ts.
+  productImageUrl  String?
+  productImageAlt  String?
+
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  attendances    Attendance[]
+  portfolioItems PortfolioItem[]
+
+  @@unique([levelId, sessionNumber])
+}
+
+model Enrollment {
+  id             String           @id @default(cuid())
+  childId        String
+  child          Child            @relation(fields: [childId], references: [id], onDelete: Cascade)
+  courseId       String
+  course         Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  currentLevelId String?
+  currentLevel   CourseLevel?     @relation("CurrentLevel", fields: [currentLevelId], references: [id], onDelete: SetNull)
+  status         String           @default("ACTIVE") // ACTIVE | COMPLETED | PAUSED | CANCELLED
+  startedAt      DateTime         @default(now())
+  completedAt    DateTime?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  attendances    Attendance[]
+  portfolioItems PortfolioItem[]
+  payments       Payment[]
+
+  @@index([childId, courseId])
+}
+
+model Attendance {
+  id           String            @id @default(cuid())
+  childId      String
+  child        Child             @relation(fields: [childId], references: [id], onDelete: Cascade)
+  sessionId    String
+  session      CourseSession     @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  enrollmentId String
+  enrollment   Enrollment        @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  status       String            // PRESENT | ABSENT | LATE | EXCUSED
+  attendedAt   DateTime          @default(now())
+  notes        String?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  // One attendance record per child per session. Re-saving attendance for the
+  // same child/session updates this row instead of creating a duplicate, which
+  // is what makes the "no duplicate portfolio items on re-mark" rule possible.
+  @@unique([childId, sessionId])
+}
+
+model PortfolioItem {
+  id                  String     @id @default(cuid())
+  childId             String
+  child               Child      @relation(fields: [childId], references: [id], onDelete: Cascade)
+  enrollmentId        String
+  enrollment          Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  courseId            String
+  course              Course     @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  levelId             String
+  level               CourseLevel @relation(fields: [levelId], references: [id], onDelete: Cascade)
+  sessionId           String?
+  session             CourseSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  title               String
+  description         String?
+  type                String     // ROBOT | APP | GAME | STORY | PROJECT | OTHER
+  mediaUrl            String?
+  createdAutomatically Boolean   @default(false)
+  // Soft-delete flag. When attendance flips PRESENT -> ABSENT/LATE/EXCUSED for an
+  // auto-created item, we set isActive=false instead of hard-deleting, so the
+  // record (and any media/notes added later) is never silently lost. See
+  // src/lib/portfolio.ts for the full rationale.
+  isActive            Boolean   @default(true)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  // One auto-generated portfolio item per child per session (prevents duplicates
+  // when attendance is toggled PRESENT multiple times).
+  @@unique([childId, sessionId])
+}
+
+model Payment {
+  id           String        @id @default(cuid())
+  childId      String
+  child        Child         @relation(fields: [childId], references: [id], onDelete: Cascade)
+  enrollmentId String
+  enrollment   Enrollment    @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  levelId      String
+  level        CourseLevel   @relation(fields: [levelId], references: [id], onDelete: Cascade)
+  amount       Float
+  status       String        @default("UNPAID") // PAID | UNPAID | PARTIAL
+  paidAt       DateTime?
+  notes        String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@unique([childId, levelId])
+}
+
+model Badge {
+  id           String       @id @default(cuid())
+  name         String
+  description  String?
+  icon         String?
+  track        String?      // ROBOTICS | PROGRAMMING
+  triggerType  String       @default("MANUAL") // MANUAL | LEVEL_COMPLETED | COURSE_COMPLETED | ATTENDANCE_COUNT | PROJECT_COUNT
+  triggerValue Int?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  childBadges ChildBadge[]
+}
+
+model ChildBadge {
+  id         String   @id @default(cuid())
+  childId    String
+  child      Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
+  badgeId    String
+  badge      Badge    @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+  awardedAt  DateTime @default(now())
+  awardedBy  String?
+  reason     String?
+
+  @@unique([childId, badgeId])
+}
