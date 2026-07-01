@@ -9,26 +9,54 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { ImageUploadField } from "@/components/admin/image-upload-field";
-import { Plus, Pencil } from "lucide-react";
+import { Plus, Pencil, Trash2, Package } from "lucide-react";
 import { OUTPUT_TYPE_LABELS } from "@/lib/utils";
+
+type ProductLike = {
+  id?: string;
+  name: string;
+  type: string;
+  description?: string | null;
+  imageUrl?: string | null;
+  imageAlt?: string | null;
+};
 
 type SessionLike = {
   id: string;
   title: string;
   description?: string | null;
-  outputType: string;
-  outputName: string;
-  outputDescription?: string | null;
-  productImageUrl?: string | null;
-  productImageAlt?: string | null;
+  products: ProductLike[];
 };
 
+type ProductDraft = {
+  id?: string; // present when editing an existing product
+  key: string; // stable React key for new rows
+  name: string;
+  type: string;
+  description: string;
+  imageUrl: string | null;
+  imageAlt: string;
+};
+
+let draftKeyCounter = 0;
+function newDraft(partial?: Partial<ProductDraft>): ProductDraft {
+  return {
+    key: `draft-${++draftKeyCounter}`,
+    name: "",
+    type: "PROJECT",
+    description: "",
+    imageUrl: null,
+    imageAlt: "",
+    ...partial,
+  };
+}
+
 /**
- * Add/Edit dialog for a course session, including the session "product"
- * photo (see ImageUploadField for the upload/replace/remove mechanics, and
- * src/lib/storage.ts for where the file actually ends up). When editing, a
- * removed/replaced photo is reflected immediately since the upload field
- * uploads eagerly and the form only ever stores the resulting URL.
+ * Add/Edit dialog for a course session. A session can produce MULTIPLE
+ * products — each with its own type, name, description, and photo (see
+ * ImageUploadField for the upload/replace/remove mechanics, and
+ * src/lib/storage.ts for where the file actually ends up). Each product
+ * becomes its own auto-created portfolio item when attendance is PRESENT.
  */
 export function SessionFormDialog({
   levelId,
@@ -44,26 +72,48 @@ export function SessionFormDialog({
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState(session?.title ?? `Session ${nextSessionNumber}`);
   const [description, setDescription] = useState(session?.description ?? "");
-  const [outputType, setOutputType] = useState(session?.outputType ?? "PROJECT");
-  const [outputName, setOutputName] = useState(session?.outputName ?? "");
-  const [outputDescription, setOutputDescription] = useState(session?.outputDescription ?? "");
-  const [productImageUrl, setProductImageUrl] = useState<string | null>(session?.productImageUrl ?? null);
-  const [productImageAlt, setProductImageAlt] = useState(session?.productImageAlt ?? "");
+  const [products, setProducts] = useState<ProductDraft[]>(() =>
+    session && session.products.length > 0
+      ? session.products.map((p) =>
+          newDraft({
+            id: p.id,
+            name: p.name,
+            type: p.type,
+            description: p.description ?? "",
+            imageUrl: p.imageUrl ?? null,
+            imageAlt: p.imageAlt ?? "",
+          })
+        )
+      : [newDraft()]
+  );
   const [loading, setLoading] = useState(false);
+
+  function updateProduct(key: string, patch: Partial<ProductDraft>) {
+    setProducts((prev) => prev.map((p) => (p.key === key ? { ...p, ...patch } : p)));
+  }
+  function removeProduct(key: string) {
+    setProducts((prev) => (prev.length > 1 ? prev.filter((p) => p.key !== key) : prev));
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (products.some((p) => !p.name.trim())) {
+      return toast.error("Every product needs a name");
+    }
     setLoading(true);
     const payload = {
       levelId,
       sessionNumber: nextSessionNumber,
       title,
       description,
-      outputType,
-      outputName,
-      outputDescription,
-      productImageUrl,
-      productImageAlt: productImageUrl ? productImageAlt : null,
+      products: products.map((p) => ({
+        ...(p.id ? { id: p.id } : {}),
+        name: p.name.trim(),
+        type: p.type,
+        description: p.description || null,
+        imageUrl: p.imageUrl,
+        imageAlt: p.imageUrl ? p.imageAlt : null,
+      })),
     };
     const res = await fetch(isEdit ? `/api/sessions/${session!.id}` : "/api/sessions", {
       method: isEdit ? "PATCH" : "POST",
@@ -88,8 +138,8 @@ export function SessionFormDialog({
           <Button size="sm" variant="outline"><Plus className="h-4 w-4 mr-1" /> Add Session</Button>
         )}
       </DialogTrigger>
-      <DialogContent className="max-w-lg">
-        <DialogHeader><DialogTitle>{isEdit ? `Edit Session ${session!.title}` : `Add Session ${nextSessionNumber}`}</DialogTitle></DialogHeader>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader><DialogTitle>{isEdit ? `Edit Session: ${session!.title}` : `Add Session ${nextSessionNumber}`}</DialogTitle></DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label>Session Title</Label>
@@ -99,33 +149,74 @@ export function SessionFormDialog({
             <Label>Description</Label>
             <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} />
           </div>
-          <div className="space-y-2">
-            <Label>Output Type</Label>
-            <Select value={outputType} onValueChange={setOutputType}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {Object.entries(OUTPUT_TYPE_LABELS).map(([key, val]) => (
-                  <SelectItem key={key} value={key}>{val.emoji} {val.en} / {val.ar}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <Label>Output / Product Name</Label>
-            <Input value={outputName} onChange={(e) => setOutputName(e.target.value)} placeholder="e.g. Line-following robot" required />
-          </div>
-          <div className="space-y-2">
-            <Label>Output Description (optional)</Label>
-            <Textarea value={outputDescription} onChange={(e) => setOutputDescription(e.target.value)} rows={2} />
-          </div>
 
-          <ImageUploadField
-            imageUrl={productImageUrl}
-            imageAlt={productImageAlt}
-            onImageUrlChange={setProductImageUrl}
-            onImageAltChange={setProductImageAlt}
-            label="Product Photo"
-          />
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Label className="flex items-center gap-1.5">
+                <Package className="h-4 w-4" /> Products / Outputs
+                <span className="text-xs font-normal text-muted-foreground">— what the child builds in this session</span>
+              </Label>
+              <Button type="button" size="sm" variant="secondary" onClick={() => setProducts((prev) => [...prev, newDraft()])}>
+                <Plus className="h-3.5 w-3.5 mr-1" /> Add product
+              </Button>
+            </div>
+
+            {products.map((p, i) => (
+              <div key={p.key} className="rounded-xl border bg-muted/30 p-4 space-y-3 relative">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Product {i + 1}</span>
+                  {products.length > 1 && (
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="ghost"
+                      className="h-7 w-7 text-destructive hover:text-destructive"
+                      title="Remove this product"
+                      onClick={() => removeProduct(p.key)}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label>Type</Label>
+                    <Select value={p.type} onValueChange={(v) => updateProduct(p.key, { type: v })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(OUTPUT_TYPE_LABELS).map(([key, val]) => (
+                          <SelectItem key={key} value={key}>{val.emoji} {val.en} / {val.ar}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Name</Label>
+                    <Input
+                      value={p.name}
+                      onChange={(e) => updateProduct(p.key, { name: e.target.value })}
+                      placeholder="e.g. Line-following robot"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Description (optional)</Label>
+                  <Textarea value={p.description} onChange={(e) => updateProduct(p.key, { description: e.target.value })} rows={2} />
+                </div>
+
+                <ImageUploadField
+                  imageUrl={p.imageUrl}
+                  imageAlt={p.imageAlt}
+                  onImageUrlChange={(url) => updateProduct(p.key, { imageUrl: url })}
+                  onImageAltChange={(alt) => updateProduct(p.key, { imageAlt: alt })}
+                  label="Product Photo"
+                />
+              </div>
+            ))}
+          </div>
 
           <DialogFooter>
             <Button type="submit" disabled={loading}>{loading ? "Saving..." : isEdit ? "Save Changes" : "Add Session"}</Button>

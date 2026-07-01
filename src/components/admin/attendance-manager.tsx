@@ -18,8 +18,8 @@ type Course = {
   levels: {
     id: string; levelNumber: number; name: string;
     sessions: {
-      id: string; sessionNumber: number; title: string; outputType: string; outputName: string;
-      productImageUrl?: string | null; productImageAlt?: string | null;
+      id: string; sessionNumber: number; title: string;
+      products: { id: string; name: string; type: string; imageUrl?: string | null; imageAlt?: string | null }[];
     }[];
   }[];
 };
@@ -128,22 +128,25 @@ export function AttendanceManager({ courses }: { courses: Course[] }) {
 
       {session && (
         <Card className="overflow-hidden border-amber-200 bg-amber-50/40">
-          <CardContent className="p-4 flex items-center gap-4">
-            <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg border bg-white">
-              <ProductImage
-                src={session.productImageUrl}
-                alt={session.productImageAlt}
-                outputType={session.outputType}
-                className="h-16 w-16"
-              />
+          <CardContent className="p-4 space-y-3">
+            <div className="font-medium">
+              Session products ({session.products.length}):
             </div>
-            <div className="flex-1">
-              <div className="font-medium flex items-center gap-1">
-                <span>{OUTPUT_TYPE_LABELS[session.outputType]?.emoji}</span> Session output: {session.outputName}
-              </div>
-              <div className="text-xs text-amber-800 flex items-center gap-1 mt-1">
-                <Sparkles className="h-3 w-3" /> Marking a child <strong>Present</strong> will automatically create/update their portfolio item with this photo.
-              </div>
+            <div className="flex flex-wrap gap-3">
+              {session.products.map((p) => (
+                <div key={p.id} className="flex items-center gap-3 rounded-lg border bg-white p-2 pr-4">
+                  <div className="h-12 w-12 shrink-0 overflow-hidden rounded-md border">
+                    <ProductImage src={p.imageUrl} alt={p.imageAlt} outputType={p.type} className="h-12 w-12" />
+                  </div>
+                  <div className="text-sm font-medium flex items-center gap-1">
+                    <span>{OUTPUT_TYPE_LABELS[p.type]?.emoji}</span> {p.name}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="text-xs text-amber-800 flex items-center gap-1">
+              <Sparkles className="h-3 w-3" /> Marking a child <strong>Present</strong> automatically creates/updates
+              {session.products.length === 1 ? " a portfolio item for this product." : ` ${session.products.length} portfolio items — one per product.`}
             </div>
           </CardContent>
         </Card>

@@ -18,13 +18,16 @@ import type { OutputType, Track } from "../src/lib/enums";
 
 const prisma = new PrismaClient();
 
+type ProductDef = {
+  name: string;
+  type: OutputType;
+  description: string;
+  imageUrl: string;
+  imageAlt: string;
+};
 type SessionDef = {
   title: string;
-  outputType: OutputType;
-  outputName: string;
-  outputDescription: string;
-  productImageUrl: string;
-  productImageAlt: string;
+  products: ProductDef[]; // a session can produce one OR MANY things
 };
 type LevelDef = { name: string; description: string; price: number; sessions: SessionDef[] };
 type CourseDef = { name: string; track: Track; minAge: number; maxAge: number; description: string; levels: LevelDef[] };
@@ -43,14 +46,29 @@ const PRODUCT_IMAGE_BY_TYPE: Record<OutputType, string> = {
 };
 
 function fourSessions(prefix: string, type: OutputType, items: string[]): SessionDef[] {
-  return items.map((item, i) => ({
-    title: `${prefix} - Week ${i + 1}`,
-    outputType: type,
-    outputName: item,
-    outputDescription: `Output created during week ${i + 1} of ${prefix}.`,
-    productImageUrl: type === "ROBOT" && i % 2 === 1 ? "/seed-images/robot-2.svg" : PRODUCT_IMAGE_BY_TYPE[type],
-    productImageAlt: `Photo of the ${item.toLowerCase()} built in ${prefix}`,
-  }));
+  return items.map((item, i) => {
+    const products: ProductDef[] = [
+      {
+        name: item,
+        type,
+        description: `Output created during week ${i + 1} of ${prefix}.`,
+        imageUrl: type === "ROBOT" && i % 2 === 1 ? "/seed-images/robot-2.svg" : PRODUCT_IMAGE_BY_TYPE[type],
+        imageAlt: `Photo of the ${item.toLowerCase()} built in ${prefix}`,
+      },
+    ];
+    // Demonstrate multi-product sessions: the last week of every level also
+    // produces a project write-up alongside the main output.
+    if (i === items.length - 1) {
+      products.push({
+        name: `${item} — Project Poster`,
+        type: "PROJECT",
+        description: `A showcase poster the child made to present their ${item.toLowerCase()}.`,
+        imageUrl: PRODUCT_IMAGE_BY_TYPE.PROJECT,
+        imageAlt: `Poster presenting the ${item.toLowerCase()}`,
+      });
+    }
+    return { title: `${prefix} - Week ${i + 1}`, products };
+  });
 }
 
 const COURSES: CourseDef[] = [
@@ -168,11 +186,16 @@ async function main() {
             sessionNumber: si + 1,
             title: s.title,
             description: `Session ${si + 1} of ${lvl.name}.`,
-            outputType: s.outputType,
-            outputName: s.outputName,
-            outputDescription: s.outputDescription,
-            productImageUrl: s.productImageUrl,
-            productImageAlt: s.productImageAlt,
+            products: {
+              create: s.products.map((p, pi) => ({
+                name: p.name,
+                type: p.type,
+                description: p.description,
+                imageUrl: p.imageUrl,
+                imageAlt: p.imageAlt,
+                sortOrder: pi,
+              })),
+            },
           },
         });
         sessionIds.push(session.id);

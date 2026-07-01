@@ -10,7 +10,7 @@
     --ic-red: 355 100% 58%;   /* #FF2A3D Energy Red */
     --ic-navy: 228 67% 18%;   /* #0F1B4C Dark Navy */
 
-    --background: 0 0% 100%;
+    --background: 220 25% 98%;
     --foreground: var(--ic-navy);
     --card: 0 0% 100%;
     --card-foreground: var(--ic-navy);
@@ -35,8 +35,14 @@
 
 @layer base {
   * { @apply border-border; }
-  body { @apply bg-background text-foreground; }
+  body { @apply bg-background text-foreground antialiased; }
 }
+
+/* Nicer, thinner scrollbars everywhere (WebKit + Firefox) */
+* { scrollbar-width: thin; scrollbar-color: hsl(220 13% 85%) transparent; }
+*::-webkit-scrollbar { width: 8px; height: 8px; }
+*::-webkit-scrollbar-thumb { background: hsl(220 13% 85%); border-radius: 8px; }
+*::-webkit-scrollbar-track { background: transparent; }
 
 /* RTL support: when dir="rtl" is set on a container, flip text alignment for
    Arabic content while keeping the overall dashboard layout usable. */
@@ -48,7 +54,30 @@
   display: inline-block;
 }
 
+/* Brand gradients */
 .kid-gradient-1 { background: linear-gradient(135deg, #1D5DFF 0%, #0F1B4C 100%); }
 .kid-gradient-2 { background: linear-gradient(135deg, #F4E625 0%, #FF2A3D 100%); }
 .kid-gradient-3 { background: linear-gradient(135deg, #FF2A3D 0%, #1D5DFF 100%); }
 .kid-gradient-4 { background: linear-gradient(135deg, #F4E625 0%, #1D5DFF 100%); }
+
+/* Decorative dotted grid used on the login screen + child hero */
+.dot-grid {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.18) 1.5px, transparent 1.5px);
+  background-size: 22px 22px;
+}
+
+/* Soft floating blob for decorative backgrounds */
+.blob {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(60px);
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* Gentle float animation for hero decorations */
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+.animate-float-slow { animation: float-slow 6s ease-in-out infinite; }

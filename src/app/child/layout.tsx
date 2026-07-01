@@ -7,7 +7,7 @@ export default async function ChildLayout({ children }: { children: React.ReactN
   if (!session) redirect("/login");
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-violet-50 to-white">
+    <div className="min-h-screen bg-gradient-to-b from-blue-50 via-white to-yellow-50/40">
       <ChildNav />
       <main className="max-w-5xl mx-auto px-4 pb-12">{children}</main>
     </div>

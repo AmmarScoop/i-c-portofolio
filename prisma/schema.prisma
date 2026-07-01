@@ -1,4 +1,4 @@
-// Prisma schema for the Kids Tech Academy Portfolio & Progress Management System.
+// Prisma schema for the I.C Robotics Academy Portfolio & Progress Management System.
 //
 // Default datasource is SQLite for zero-config local development.
 // To use Supabase/PostgreSQL in production: change provider below to "postgresql"
@@ -116,25 +116,40 @@ model CourseSession {
   sessionNumber    Int
   title            String
   description      String?
-  outputType       String     // "ROBOT" | "APP" | "GAME" | "STORY" | "PROJECT" | "OTHER"
-  outputName       String
-  outputDescription String?
-
-  // Photo of the real product/output the child makes (or is expected to make)
-  // in this session. Shown to the admin when building the course structure and
-  // to the child on their dashboard/progress/portfolio pages. Copied onto the
-  // auto-created PortfolioItem.mediaUrl when attendance is marked PRESENT — see
-  // src/lib/portfolio.ts.
-  productImageUrl  String?
-  productImageAlt  String?
 
   createdAt        DateTime   @default(now())
   updatedAt        DateTime   @updatedAt
 
+  // The real products/outputs the child makes in this session. A session can
+  // have one or many (e.g. "build a robot AND write its control app").
+  // Each product auto-creates its own PortfolioItem when attendance is
+  // marked PRESENT - see src/lib/portfolio.ts.
+  products       SessionProduct[]
   attendances    Attendance[]
   portfolioItems PortfolioItem[]
 
   @@unique([levelId, sessionNumber])
+}
+
+// One product/output built during a session. Sessions can define multiple
+// products; each becomes its own portfolio entry (with its own photo) for
+// every child marked PRESENT.
+model SessionProduct {
+  id          String        @id @default(cuid())
+  sessionId   String
+  session     CourseSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  name        String
+  type        String        // "ROBOT" | "APP" | "GAME" | "STORY" | "PROJECT" | "OTHER"
+  description String?
+  imageUrl    String?
+  imageAlt    String?
+  sortOrder   Int           @default(0)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  portfolioItems PortfolioItem[]
+
+  @@index([sessionId, sortOrder])
 }
 
 model Enrollment {
@@ -190,6 +205,12 @@ model PortfolioItem {
   level               CourseLevel @relation(fields: [levelId], references: [id], onDelete: Cascade)
   sessionId           String?
   session             CourseSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  // Which specific product of the session this item mirrors (auto-created
+  // items only; manual items leave it null). SetNull so removing a product
+  // from the session definition never hard-deletes a child's portfolio row -
+  // the API soft-deactivates auto items first (see /api/sessions/[id]).
+  productId           String?
+  product             SessionProduct? @relation(fields: [productId], references: [id], onDelete: SetNull)
   title               String
   description         String?
   type                String     // ROBOT | APP | GAME | STORY | PROJECT | OTHER
@@ -203,9 +224,11 @@ model PortfolioItem {
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
 
-  // One auto-generated portfolio item per child per session (prevents duplicates
-  // when attendance is toggled PRESENT multiple times).
-  @@unique([childId, sessionId])
+  // One auto-generated portfolio item per child per session PRODUCT (prevents
+  // duplicates when attendance is toggled PRESENT multiple times, while still
+  // allowing several products - hence several items - per session).
+  @@unique([childId, sessionId, productId])
+  @@index([childId, isActive])
 }
 
 model Payment {

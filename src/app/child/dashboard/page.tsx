@@ -18,7 +18,17 @@ export default async function ChildDashboard() {
     include: {
       enrollments: {
         where: { status: "ACTIVE" },
-        include: { course: true, currentLevel: { include: { sessions: { orderBy: { sessionNumber: "asc" } } } } },
+        include: {
+          course: true,
+          currentLevel: {
+            include: {
+              sessions: {
+                include: { products: { orderBy: { sortOrder: "asc" } } },
+                orderBy: { sessionNumber: "asc" },
+              },
+            },
+          },
+        },
       },
       attendances: { where: { status: "PRESENT" }, select: { sessionId: true } },
       portfolioItems: { where: { isActive: true }, orderBy: { createdAt: "desc" }, take: 4 },
@@ -31,9 +41,13 @@ export default async function ChildDashboard() {
 
   return (
     <div className="space-y-8 py-6">
-      <div className="kid-gradient-1 rounded-2xl text-white p-6 shadow-lg">
-        <h1 className="text-2xl font-bold">Hi {child.fullName}! 👋</h1>
-        <p className="opacity-90">Welcome back to your learning adventure!</p>
+      <div className="kid-gradient-1 rounded-2xl text-white p-6 shadow-lg relative overflow-hidden">
+        <div className="dot-grid absolute inset-0 opacity-50" />
+        <div className="blob bg-kid-yellow h-40 w-40 -top-10 -right-10" />
+        <div className="relative">
+          <h1 className="text-2xl font-bold">Hi {child.fullName}! 👋</h1>
+          <p className="opacity-90">Welcome back to your learning adventure!</p>
+        </div>
       </div>
 
       <div>
@@ -61,13 +75,13 @@ export default async function ChildDashboard() {
                   <Progress value={pct} />
                   <div className="text-xs text-muted-foreground">{completed} / {totalSessions} sessions completed ({pct}%)</div>
 
-                  {nextSession ? (
+                  {nextSession && nextSession.products.length > 0 ? (
                     <div className="flex items-center gap-3 rounded-xl bg-muted/50 p-2">
                       <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg">
                         <ProductImage
-                          src={nextSession.productImageUrl}
-                          alt={nextSession.productImageAlt}
-                          outputType={nextSession.outputType}
+                          src={nextSession.products[0].imageUrl}
+                          alt={nextSession.products[0].imageAlt}
+                          outputType={nextSession.products[0].type}
                           className="h-14 w-14"
                           gradientIndex={1}
                         />
@@ -76,7 +90,12 @@ export default async function ChildDashboard() {
                         <div className="text-[11px] font-semibold text-primary flex items-center gap-1">
                           <Sparkles className="h-3 w-3" /> Coming up / قادم
                         </div>
-                        <div className="text-sm font-medium truncate">{nextSession.outputName}</div>
+                        <div className="text-sm font-medium truncate">
+                          {nextSession.products[0].name}
+                          {nextSession.products.length > 1 && (
+                            <span className="text-muted-foreground font-normal"> +{nextSession.products.length - 1} more</span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ) : totalSessions > 0 ? (

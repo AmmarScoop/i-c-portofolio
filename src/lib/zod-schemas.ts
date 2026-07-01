@@ -25,18 +25,26 @@ export const courseLevelSchema = z.object({
   price: z.coerce.number().min(0).optional().nullable(),
 });
 
+// One product/output of a session. `id` is present when editing an existing
+// product (so the API can diff create/update/delete) and absent for new ones.
+export const sessionProductSchema = z.object({
+  id: z.string().optional(),
+  name: z.string().min(1, "Product name is required"),
+  type: z.enum(["ROBOT", "APP", "GAME", "STORY", "PROJECT", "OTHER"]),
+  description: z.string().optional().nullable(),
+  // Set via the /api/upload endpoint (or cleared by the admin) — never a raw
+  // file upload itself, the form posts JSON with the resulting storage URL.
+  imageUrl: z.string().optional().nullable(),
+  imageAlt: z.string().max(200).optional().nullable(),
+});
+
 export const courseSessionSchema = z.object({
   levelId: z.string().min(1),
   sessionNumber: z.coerce.number().int().min(1),
   title: z.string().min(1),
   description: z.string().optional().nullable(),
-  outputType: z.enum(["ROBOT", "APP", "GAME", "STORY", "PROJECT", "OTHER"]),
-  outputName: z.string().min(1, "Output/product name is required"),
-  outputDescription: z.string().optional().nullable(),
-  // Set via the /api/upload endpoint (or cleared by the admin) — never a raw
-  // file upload itself, the form posts JSON with the resulting storage URL.
-  productImageUrl: z.string().optional().nullable(),
-  productImageAlt: z.string().max(200).optional().nullable(),
+  // A session must produce at least one thing, but can produce many.
+  products: z.array(sessionProductSchema).min(1, "Add at least one product"),
 });
 
 // ---------- Child ----------
