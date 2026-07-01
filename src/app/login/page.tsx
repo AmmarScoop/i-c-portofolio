@@ -36,9 +36,10 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center kid-gradient-1 p-4">
       <Card className="w-full max-w-md shadow-2xl">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-2 text-5xl">🚀</div>
-          <CardTitle className="text-2xl">Kids Tech Academy</CardTitle>
-          <CardDescription>أكاديمية التقنية للأطفال — Sign in to continue</CardDescription>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.png" alt="I.C Robotics Academy logo" className="mx-auto mb-2 h-20 w-20 object-contain" />
+          <CardTitle className="text-2xl">I.C Robotics Academy</CardTitle>
+          <CardDescription>Sign in to continue</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -48,15 +49,12 @@ export default function LoginPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required placeholder="••••••••" />
+              <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required placeholder="********" />
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Signing in..." : "Sign In"}
             </Button>
           </form>
-          <p className="mt-4 text-xs text-muted-foreground text-center">
-            Demo admin: admin@academy.test / Admin123! &nbsp;·&nbsp; Demo child: sara@academy.test / Child123!
-          </p>
         </CardContent>
       </Card>
     </div>

@@ -5,7 +5,7 @@ import { signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
-  LayoutDashboard, BookOpen, Users, ClipboardList, CalendarCheck, Wallet, Award, LogOut, Rocket,
+  LayoutDashboard, BookOpen, Users, ClipboardList, CalendarCheck, Wallet, Award, LogOut,
 } from "lucide-react";
 
 const links = [
@@ -23,9 +23,10 @@ export function AdminNav() {
   return (
     <aside className="hidden md:flex md:flex-col w-64 shrink-0 border-r bg-card min-h-screen sticky top-0">
       <div className="flex items-center gap-2 px-5 h-16 border-b">
-        <Rocket className="h-6 w-6 text-primary" />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/logo.png" alt="I.C Robotics Academy logo" className="h-9 w-9 object-contain" />
         <div>
-          <div className="font-bold leading-none">Kids Tech Academy</div>
+          <div className="font-bold leading-none">I.C Robotics Academy</div>
           <div className="text-xs text-muted-foreground">Admin Console</div>
         </div>
       </div>

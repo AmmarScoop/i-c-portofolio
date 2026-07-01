@@ -6,8 +6,9 @@ import { Providers } from "@/components/shared/providers";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Kids Tech Academy",
+  title: "I.C Robotics Academy",
   description: "Portfolio & Progress Management System",
+  icons: { icon: "/logo.png" },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
