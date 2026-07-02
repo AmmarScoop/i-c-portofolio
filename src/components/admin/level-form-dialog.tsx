@@ -17,6 +17,17 @@ export function LevelFormDialog({ courseId, nextLevelNumber }: { courseId: strin
   const [price, setPrice] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // Re-initialize from current props on every open (state would otherwise
+  // stay stale after router.refresh() bumps nextLevelNumber).
+  function handleOpenChange(nextOpen: boolean) {
+    setOpen(nextOpen);
+    if (nextOpen) {
+      setName(`Level ${nextLevelNumber}`);
+      setDescription("");
+      setPrice("");
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
@@ -33,7 +44,7 @@ export function LevelFormDialog({ courseId, nextLevelNumber }: { courseId: strin
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button size="sm"><Plus className="h-4 w-4 mr-1" /> Add Level</Button>
       </DialogTrigger>

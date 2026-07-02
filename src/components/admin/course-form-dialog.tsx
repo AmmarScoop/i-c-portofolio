@@ -22,12 +22,21 @@ export function CourseFormDialog({ course }: { course?: any }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const isEdit = !!course;
+  const emptyDefaults: Partial<FormValues> = { name: "", track: "ROBOTICS", isActive: true, minAge: 5, maxAge: 12, description: "" };
   const {
-    register, handleSubmit, watch, setValue, formState: { errors, isSubmitting },
+    register, handleSubmit, watch, setValue, reset, formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(courseSchema),
-    defaultValues: course ?? { track: "ROBOTICS", isActive: true, minAge: 5, maxAge: 12 },
+    defaultValues: course ?? emptyDefaults,
   });
+
+  // Reset the form from current props every time the dialog opens, so a
+  // reopened "New Course" dialog doesn't show the previously created course
+  // and an Edit dialog always reflects the latest saved values.
+  function handleOpenChange(nextOpen: boolean) {
+    setOpen(nextOpen);
+    if (nextOpen) reset(course ?? emptyDefaults);
+  }
 
   async function onSubmit(values: FormValues) {
     const res = await fetch(isEdit ? `/api/courses/${course.id}` : "/api/courses", {
@@ -45,7 +54,7 @@ export function CourseFormDialog({ course }: { course?: any }) {
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         {isEdit ? (
           <Button variant="outline" size="sm">Edit</Button>
@@ -66,7 +75,7 @@ export function CourseFormDialog({ course }: { course?: any }) {
 
           <div className="space-y-2">
             <Label>Track / المسار</Label>
-            <Select defaultValue={watch("track")} onValueChange={(v) => setValue("track", v as any)}>
+            <Select value={watch("track")} onValueChange={(v) => setValue("track", v as any)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="ROBOTICS">Robotics / الروبوتات</SelectItem>

@@ -9,7 +9,10 @@ import { TRACK_LABELS } from "@/lib/utils";
 export default async function CoursesPage() {
   const courses = await prisma.course.findMany({
     include: { levels: { include: { sessions: true } }, _count: { select: { enrollments: true } } },
-    orderBy: { createdAt: "desc" },
+    // Oldest first: keeps card positions stable when a new course is added
+    // (newest-first made the new empty course jump to position #1, which
+    // looked like the first course had been renamed/emptied).
+    orderBy: { createdAt: "asc" },
   });
 
   return (

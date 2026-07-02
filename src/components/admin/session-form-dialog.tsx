@@ -70,9 +70,9 @@ export function SessionFormDialog({
   const router = useRouter();
   const isEdit = !!session;
   const [open, setOpen] = useState(false);
-  const [title, setTitle] = useState(session?.title ?? `Session ${nextSessionNumber}`);
-  const [description, setDescription] = useState(session?.description ?? "");
-  const [products, setProducts] = useState<ProductDraft[]>(() =>
+  const initialTitle = () => session?.title ?? `Session ${nextSessionNumber}`;
+  const initialDescription = () => session?.description ?? "";
+  const initialProducts = () =>
     session && session.products.length > 0
       ? session.products.map((p) =>
           newDraft({
@@ -84,9 +84,24 @@ export function SessionFormDialog({
             imageAlt: p.imageAlt ?? "",
           })
         )
-      : [newDraft()]
-  );
+      : [newDraft()];
+  const [title, setTitle] = useState(initialTitle);
+  const [description, setDescription] = useState(initialDescription);
+  const [products, setProducts] = useState<ProductDraft[]>(initialProducts);
   const [loading, setLoading] = useState(false);
+
+  // Re-initialize the form from the CURRENT props every time the dialog
+  // opens. Without this, the dialog keeps stale state from a previous
+  // add/edit (useState initializers only run on first mount, and
+  // router.refresh() updates props but not state).
+  function handleOpenChange(nextOpen: boolean) {
+    setOpen(nextOpen);
+    if (nextOpen) {
+      setTitle(initialTitle());
+      setDescription(initialDescription());
+      setProducts(initialProducts());
+    }
+  }
 
   function updateProduct(key: string, patch: Partial<ProductDraft>) {
     setProducts((prev) => prev.map((p) => (p.key === key ? { ...p, ...patch } : p)));
@@ -128,7 +143,7 @@ export function SessionFormDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         {isEdit ? (
           <Button size="icon" variant="ghost" className="h-7 w-7" title="Edit session">

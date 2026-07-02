@@ -29,6 +29,18 @@ export function ImageUploadField({
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  // URLs uploaded during THIS dialog session. Only these are safe to delete
+  // from storage when replaced/removed — anything else may already be
+  // referenced by a saved DB row (deleting it would break existing images;
+  // the server cleans up replaced files itself when the form is saved).
+  const sessionUploadsRef = useRef<Set<string>>(new Set());
+
+  function cleanupIfUnsaved(url: string | null) {
+    if (url && sessionUploadsRef.current.has(url)) {
+      sessionUploadsRef.current.delete(url);
+      fetch(`/api/upload?url=${encodeURIComponent(url)}`, { method: "DELETE" }).catch(() => {});
+    }
+  }
 
   async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -54,22 +66,21 @@ export function ImageUploadField({
       return;
     }
     const data = await res.json();
+    sessionUploadsRef.current.add(data.url);
     onImageUrlChange(data.url);
     toast.success("Photo uploaded");
 
-    // Best-effort cleanup of the file being replaced; non-blocking.
-    if (previousUrl) {
-      fetch(`/api/upload?url=${encodeURIComponent(previousUrl)}`, { method: "DELETE" }).catch(() => {});
-    }
+    // Best-effort cleanup, ONLY if the replaced file was uploaded in this
+    // dialog and never saved. Files already saved in the DB are cleaned up
+    // server-side when the form is submitted (see /api/sessions/[id]).
+    cleanupIfUnsaved(previousUrl);
   }
 
   function handleRemove() {
     const previousUrl = imageUrl;
     onImageUrlChange(null);
     onImageAltChange("");
-    if (previousUrl) {
-      fetch(`/api/upload?url=${encodeURIComponent(previousUrl)}`, { method: "DELETE" }).catch(() => {});
-    }
+    cleanupIfUnsaved(previousUrl);
   }
 
   return (
