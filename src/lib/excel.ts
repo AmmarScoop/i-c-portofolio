@@ -60,13 +60,22 @@ export function parseChildImportFile(buffer: ArrayBuffer): ParsedChildRow[] {
   const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: "" });
 
   return rows.map((row, idx) => {
+    // Excel stores real date cells as serial numbers (days since 1899-12-30).
+    // Convert those to ISO yyyy-mm-dd; leave typed-in text dates as-is.
+    let dob = row.dateOfBirth;
+    if (typeof dob === "number" && isFinite(dob)) {
+      dob = new Date(Date.UTC(1899, 11, 30) + dob * 86400000).toISOString().slice(0, 10);
+    } else if (dob instanceof Date) {
+      dob = dob.toISOString().slice(0, 10);
+    }
+
     const normalized = {
       fullName: String(row.fullName ?? "").trim(),
       parentName: String(row.parentName ?? "").trim(),
       parentPhone: String(row.parentPhone ?? "").trim(),
       parentEmail: String(row.parentEmail ?? "").trim(),
       age: row.age,
-      dateOfBirth: String(row.dateOfBirth ?? "").trim(),
+      dateOfBirth: String(dob ?? "").trim(),
       emergencyContactName: String(row.emergencyContactName ?? "").trim(),
       emergencyContactPhone: String(row.emergencyContactPhone ?? "").trim(),
       schoolName: String(row.schoolName ?? "").trim(),

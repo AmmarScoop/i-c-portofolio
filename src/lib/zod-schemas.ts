@@ -70,7 +70,11 @@ export const childImportRowSchema = z.object({
   parentPhone: z.string().min(5, "Parent phone is required"),
   parentEmail: z.string().email().optional().or(z.literal("")),
   age: z.coerce.number().int().min(3, "Age must be >= 3").max(25, "Age must be <= 25"),
-  dateOfBirth: z.string().optional().or(z.literal("")),
+  dateOfBirth: z
+    .string()
+    .optional()
+    .or(z.literal(""))
+    .refine((v) => !v || !isNaN(Date.parse(v)), "Invalid date — use yyyy-mm-dd format"),
   emergencyContactName: z.string().optional(),
   emergencyContactPhone: z.string().optional(),
   schoolName: z.string().optional(),

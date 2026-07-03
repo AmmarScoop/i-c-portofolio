@@ -50,30 +50,38 @@ export async function POST(req: NextRequest) {
   // mode=commit
   const validRows = annotated.filter((r) => r.valid);
   let created = 0;
+  const failedRows: { rowNumber: number; error: string }[] = [];
   for (const row of validRows) {
     const d = row.data as any;
-    await prisma.child.create({
-      data: {
-        fullName: d.fullName,
-        parentName: d.parentName,
-        parentPhone: d.parentPhone,
-        parentEmail: d.parentEmail || null,
-        age: Number(d.age),
-        dateOfBirth: d.dateOfBirth ? new Date(d.dateOfBirth) : null,
-        emergencyContactName: d.emergencyContactName || null,
-        emergencyContactPhone: d.emergencyContactPhone || null,
-        schoolName: d.schoolName || null,
-        preferredTrack: d.preferredTrack || null,
-        skillLevel: d.skillLevel || null,
-        notes: d.notes || null,
-      },
-    });
-    created++;
+    // Guard against unparseable dates so one bad cell can't 500 the request.
+    const dob = d.dateOfBirth ? new Date(d.dateOfBirth) : null;
+    try {
+      await prisma.child.create({
+        data: {
+          fullName: d.fullName,
+          parentName: d.parentName,
+          parentPhone: d.parentPhone,
+          parentEmail: d.parentEmail || null,
+          age: Number(d.age),
+          dateOfBirth: dob && !isNaN(dob.getTime()) ? dob : null,
+          emergencyContactName: d.emergencyContactName || null,
+          emergencyContactPhone: d.emergencyContactPhone || null,
+          schoolName: d.schoolName || null,
+          preferredTrack: d.preferredTrack || null,
+          skillLevel: d.skillLevel || null,
+          notes: d.notes || null,
+        },
+      });
+      created++;
+    } catch (err: any) {
+      failedRows.push({ rowNumber: row.rowNumber, error: err?.message?.split("\n").pop() ?? "Unknown error" });
+    }
   }
 
   return NextResponse.json({
     importedCount: created,
     skippedCount: annotated.length - validRows.length,
+    failedRows,
     rows: annotated,
   });
 }
