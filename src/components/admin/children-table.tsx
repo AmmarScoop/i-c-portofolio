@@ -10,7 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Download, GraduationCap, Award } from "lucide-react";
+import { Download, GraduationCap, Award, Trash2, AlertTriangle } from "lucide-react";
 import { TRACK_LABELS } from "@/lib/utils";
 
 type ChildRow = {
@@ -54,6 +54,7 @@ export function ChildrenTable({
   const [badgeOpen, setBadgeOpen] = useState(false);
   const [badgeId, setBadgeId] = useState("");
   const [bulkLoading, setBulkLoading] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   const allSelected = children.length > 0 && selected.size === children.length;
   const selectedIds = useMemo(() => Array.from(selected), [selected]);
@@ -124,6 +125,21 @@ export function ChildrenTable({
     router.refresh();
   }
 
+  async function handleBulkDelete() {
+    setBulkLoading(true);
+    let ok = 0, failed = 0;
+    for (const childId of selectedIds) {
+      const res = await fetch(`/api/children/${childId}`, { method: "DELETE" });
+      res.ok ? ok++ : failed++;
+    }
+    setBulkLoading(false);
+    setDeleteOpen(false);
+    setSelected(new Set());
+    if (failed) toast.error(`Deleted ${ok} children, ${failed} failed`);
+    else toast.success(`Deleted ${ok} children`);
+    router.refresh();
+  }
+
   return (
     <div className="space-y-3">
       {selected.size > 0 && (
@@ -162,6 +178,29 @@ export function ChildrenTable({
                 </Select>
                 <DialogFooter>
                   <Button onClick={handleBulkBadge} disabled={bulkLoading || !badgeId}>{bulkLoading ? "Awarding..." : "Award Badge"}</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm" variant="destructive"><Trash2 className="h-4 w-4 mr-1" /> Delete Selected</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <AlertTriangle className="h-5 w-5 text-destructive" /> Delete {selected.size} {selected.size === 1 ? "child" : "children"}?
+                  </DialogTitle>
+                </DialogHeader>
+                <p className="text-sm text-muted-foreground">
+                  This permanently deletes {selected.size === 1 ? "this child" : "these children"} along with all their
+                  enrollments, attendance records, portfolio items, payments, and badges. This cannot be undone.
+                </p>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setDeleteOpen(false)} disabled={bulkLoading}>Cancel</Button>
+                  <Button variant="destructive" onClick={handleBulkDelete} disabled={bulkLoading}>
+                    {bulkLoading ? "Deleting..." : `Delete ${selected.size} ${selected.size === 1 ? "child" : "children"}`}
+                  </Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
