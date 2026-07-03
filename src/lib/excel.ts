@@ -124,6 +124,8 @@ export type ChildExportRow = {
   courses: string;
   enrollmentStatus: string;
   paymentStatus: string;
+  loginEmail: string;
+  loginPassword: string;
   notes: string;
 };
 

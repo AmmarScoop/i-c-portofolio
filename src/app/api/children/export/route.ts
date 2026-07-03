@@ -22,6 +22,7 @@ export async function POST(req: NextRequest) {
     include: {
       enrollments: { include: { course: true } },
       payments: true,
+      user: true,
     },
     orderBy: { fullName: "asc" },
   });
@@ -48,6 +49,8 @@ export async function POST(req: NextRequest) {
       courses: c.enrollments.map((e) => e.course.name).join(", "),
       enrollmentStatus: c.enrollments.map((e) => e.status).join(", "),
       paymentStatus,
+      loginEmail: c.user?.email ?? "NO LOGIN",
+      loginPassword: c.user ? (c.user.initialPassword ?? "(set before tracking — reset login to see it)") : "",
       notes: c.notes ?? "",
     };
   });

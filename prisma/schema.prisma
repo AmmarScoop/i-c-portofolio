@@ -19,6 +19,10 @@ model User {
   name         String
   email        String   @unique
   passwordHash String
+  // Plaintext copy of the password set at login creation/reset, kept ONLY so
+  // admins can export/hand out child credentials. Security trade-off accepted
+  // for child demo accounts; never set this for ADMIN users.
+  initialPassword String?
   role         String   // "ADMIN" | "CHILD" (validated in src/lib/zod-schemas.ts)
   child        Child?
   createdAt    DateTime @default(now())

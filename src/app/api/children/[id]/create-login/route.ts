@@ -17,9 +17,9 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const passwordHash = await bcrypt.hash(password, 10);
 
   if (child.user) {
-    await prisma.user.update({ where: { id: child.user.id }, data: { email, passwordHash, name: child.fullName } });
+    await prisma.user.update({ where: { id: child.user.id }, data: { email, passwordHash, initialPassword: password, name: child.fullName } });
   } else {
-    const user = await prisma.user.create({ data: { name: child.fullName, email, passwordHash, role: "CHILD" } });
+    const user = await prisma.user.create({ data: { name: child.fullName, email, passwordHash, initialPassword: password, role: "CHILD" } });
     await prisma.child.update({ where: { id: child.id }, data: { userId: user.id } });
   }
 

@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Restore Lego - WeDo — label your photos</title>
+<style>
+  body { font-family: system-ui, sans-serif; margin: 24px; background: #fafafa; }
+  h1 { font-size: 20px; }
+  p { color: #555; max-width: 760px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; margin-top: 20px; }
+  .card { background: #fff; border: 1px solid #e2e2e2; border-radius: 10px; overflow: hidden; }
+  .card img { width: 100%; height: 150px; object-fit: cover; display: block; background: #eee; }
+  .card .form { padding: 10px; display: flex; flex-direction: column; gap: 6px; }
+  .card input, .card select { padding: 6px 8px; border: 1px solid #ccc; border-radius: 6px; font-size: 13px; }
+  .card .fname { font-size: 10px; color: #999; word-break: break-all; }
+  .row { display: flex; gap: 6px; }
+  .row input[type=number] { width: 80px; }
+  .row select { flex: 1; }
+  .inuse { opacity: 0.45; }
+  .inuse .form::before { content: "Already attached to Cooling Fan Robot — leave empty"; color: #16a34a; font-size: 11px; font-weight: 600; }
+  #out { width: 100%; height: 160px; margin-top: 12px; font-family: monospace; font-size: 12px; }
+  button { margin-top: 20px; padding: 10px 18px; font-size: 15px; border: 0; border-radius: 8px; background: #2563eb; color: #fff; cursor: pointer; }
+  .hint { background: #fff7ed; border: 1px solid #fdba74; border-radius: 8px; padding: 10px 14px; font-size: 13px; color: #7c2d12; }
+</style>
+</head>
+<body>
+<h1>Restore "Lego - WeDo" — label each photo</h1>
+<p>For every photo that belongs in the course: type the <b>product name</b> (e.g. "Pumping iron Robot"), the <b>level</b> (L) and <b>session number</b> (S) it belongs to, and its <b>type</b>. Leave the name <b>empty</b> for photos you don't want to restore. Then click the button at the bottom.</p>
+<div class="grid" id="grid"></div>
+<button onclick="generate()">Generate restore-plan.json</button>
+<p>Copy ALL the text below and save it as <b>scripts\restore-plan.json</b> in your project folder (or click the button — it downloads the file, then move it into the <b>scripts</b> folder):</p>
+<div class="hint" id="summary" style="display:none"></div>
+<textarea id="out" readonly placeholder="Plan will appear here..."></textarea><br>
+<button onclick="download()" style="background:#16a34a">Download restore-plan.json</button>
+<script>
+const BASE = "https://teahletitmrivyfolozu.supabase.co/storage/v1/object/public/session-products/";
+const IN_USE = "830c7b53-034d-4070-9ba1-ae45f2e34c93.png";
+const TYPES = ["ROBOT","APP","GAME","STORY","PROJECT","OTHER"];
+const FILES = [
+  "911a912b-1166-48b5-aa4b-257a97550af1.png","8147f1b6-f2aa-4948-9da6-7d5670303126.png",
+  "3d9cd0fe-2ade-4cc7-a29b-6261488acc6a.png","f24e791b-1831-402f-a728-04c69adf2f67.png",
+  "cdbab296-7a02-489a-840e-2ca14880641f.png","a1269c13-9d95-4410-9b7c-5079134fcb6c.png",
+  "2bff98d7-e9d1-4a70-a75b-922c8e1e2cca.png","f5bd9229-58aa-4e12-b797-c0e85b1d7c87.png",
+  "8d16dcce-0714-4140-8bfc-8ffc63ba9077.png","df776b70-e4d9-4e47-8021-ad34809d0b51.png",
+  "081fa0fe-8583-4e90-b0a3-9928feb9ef06.png","9fd77575-e544-48a9-b373-49fcec3cec53.png",
+  "73b4c729-eded-442a-ac99-eaf4755ec4ff.png","c6bf95fe-9819-4df3-beb4-6cbbc1eff961.png",
+  "4c084dc5-8f01-41da-9d06-d056ce39b534.png","2205eb18-65bb-4fea-800c-74c5ae9e512d.png",
+  "c7e600d2-a428-4468-9e05-baf465cbba6b.png","56ebc338-f1ab-4e12-8d9c-27fd3e0d58e6.png",
+  "230a96f5-1cba-4188-93d6-dbef2e4b101b.png","6ea8d012-1f44-4692-938d-ed2728fa2e86.png",
+  "dbb56a02-60d4-436a-8b40-ab2171fe4ad4.png","41a1d252-6aa8-4bf8-8079-744304abff58.png",
+  "830c7b53-034d-4070-9ba1-ae45f2e34c93.png",
+];
+document.getElementById("grid").innerHTML = FILES.map((f, i) => `
+  <div class="card ${f === IN_USE ? "inuse" : ""}" data-file="${f}">
+    <a href="${BASE + f}" target="_blank"><img src="${BASE + f}" loading="lazy"></a>
+    <div class="form">
+      <input type="text" class="pname" placeholder="Product name (empty = skip)">
+      <div class="row">
+        <label style="font-size:11px;color:#666;align-self:center">L</label>
+        <input type="number" class="lnum" min="1" value="1" title="Level number">
+        <label style="font-size:11px;color:#666;align-self:center">S</label>
+        <input type="number" class="snum" min="1" value="1" title="Session number">
+        <select class="ptype">${TYPES.map(t => `<option${t === "ROBOT" ? " selected" : ""}>${t}</option>`).join("")}</select>
+      </div>
+      <div class="fname">${f}</div>
+    </div>
+  </div>`).join("");
+
+function buildPlan() {
+  const plan = [];
+  document.querySelectorAll(".card").forEach((card) => {
+    const name = card.querySelector(".pname").value.trim();
+    if (!name) return;
+    plan.push({
+      file: card.dataset.file,
+      level: parseInt(card.querySelector(".lnum").value, 10) || 1,
+      session: parseInt(card.querySelector(".snum").value, 10) || 1,
+      name,
+      type: card.querySelector(".ptype").value,
+    });
+  });
+  return plan;
+}
+function generate() {
+  const plan = buildPlan();
+  document.getElementById("out").value = JSON.stringify(plan, null, 2);
+  const groups = [...new Set(plan.map(p => `L${p.level}/S${p.session}`))].sort();
+  const s = document.getElementById("summary");
+  s.style.display = "block";
+  s.textContent = plan.length === 0
+    ? "Nothing labeled yet — type at least one product name above."
+    : `${plan.length} product(s) across ${groups.join(", ")} will be restored.`;
+}
+function download() {
+  generate();
+  const blob = new Blob([document.getElementById("out").value], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "restore-plan.json";
+  a.click();
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,149 @@
+[
+  {
+    "file": "911a912b-1166-48b5-aa4b-257a97550af1.png",
+    "level": 1,
+    "session": 1,
+    "name": "Milo",
+    "type": "ROBOT"
+  },
+  {
+    "file": "8147f1b6-f2aa-4948-9da6-7d5670303126.png",
+    "level": 1,
+    "session": 1,
+    "name": "Fan",
+    "type": "ROBOT"
+  },
+  {
+    "file": "3d9cd0fe-2ade-4cc7-a29b-6261488acc6a.png",
+    "level": 1,
+    "session": 1,
+    "name": "Satalite",
+    "type": "ROBOT"
+  },
+  {
+    "file": "f24e791b-1831-402f-a728-04c69adf2f67.png",
+    "level": 1,
+    "session": 4,
+    "name": "Earthquake",
+    "type": "ROBOT"
+  },
+  {
+    "file": "cdbab296-7a02-489a-840e-2ca14880641f.png",
+    "level": 1,
+    "session": 4,
+    "name": "Floods Preventer",
+    "type": "ROBOT"
+  },
+  {
+    "file": "a1269c13-9d95-4410-9b7c-5079134fcb6c.png",
+    "level": 1,
+    "session": 1,
+    "name": "Grapper",
+    "type": "ROBOT"
+  },
+  {
+    "file": "2bff98d7-e9d1-4a70-a75b-922c8e1e2cca.png",
+    "level": 1,
+    "session": 2,
+    "name": "Bunny",
+    "type": "ROBOT"
+  },
+  {
+    "file": "f5bd9229-58aa-4e12-b797-c0e85b1d7c87.png",
+    "level": 1,
+    "session": 2,
+    "name": "Frog",
+    "type": "ROBOT"
+  },
+  {
+    "file": "8d16dcce-0714-4140-8bfc-8ffc63ba9077.png",
+    "level": 1,
+    "session": 3,
+    "name": "Kicker",
+    "type": "ROBOT"
+  },
+  {
+    "file": "df776b70-e4d9-4e47-8021-ad34809d0b51.png",
+    "level": 1,
+    "session": 3,
+    "name": "Bee",
+    "type": "ROBOT"
+  },
+  {
+    "file": "081fa0fe-8583-4e90-b0a3-9928feb9ef06.png",
+    "level": 2,
+    "session": 1,
+    "name": "Acrobat",
+    "type": "ROBOT"
+  },
+  {
+    "file": "9fd77575-e544-48a9-b373-49fcec3cec53.png",
+    "level": 2,
+    "session": 2,
+    "name": "Spy",
+    "type": "ROBOT"
+  },
+  {
+    "file": "73b4c729-eded-442a-ac99-eaf4755ec4ff.png",
+    "level": 2,
+    "session": 4,
+    "name": "Plants and Bee",
+    "type": "ROBOT"
+  },
+  {
+    "file": "c6bf95fe-9819-4df3-beb4-6cbbc1eff961.png",
+    "level": 2,
+    "session": 4,
+    "name": "Plan",
+    "type": "ROBOT"
+  },
+  {
+    "file": "2205eb18-65bb-4fea-800c-74c5ae9e512d.png",
+    "level": 3,
+    "session": 2,
+    "name": "Catterpillar",
+    "type": "ROBOT"
+  },
+  {
+    "file": "c7e600d2-a428-4468-9e05-baf465cbba6b.png",
+    "level": 2,
+    "session": 2,
+    "name": "Steering",
+    "type": "ROBOT"
+  },
+  {
+    "file": "56ebc338-f1ab-4e12-8d9c-27fd3e0d58e6.png",
+    "level": 2,
+    "session": 3,
+    "name": "Race Car",
+    "type": "ROBOT"
+  },
+  {
+    "file": "230a96f5-1cba-4188-93d6-dbef2e4b101b.png",
+    "level": 2,
+    "session": 3,
+    "name": "Grabber",
+    "type": "ROBOT"
+  },
+  {
+    "file": "6ea8d012-1f44-4692-938d-ed2728fa2e86.png",
+    "level": 2,
+    "session": 1,
+    "name": "Weight Lifter",
+    "type": "ROBOT"
+  },
+  {
+    "file": "dbb56a02-60d4-436a-8b40-ab2171fe4ad4.png",
+    "level": 3,
+    "session": 3,
+    "name": "Fork Lift",
+    "type": "ROBOT"
+  },
+  {
+    "file": "41a1d252-6aa8-4bf8-8079-744304abff58.png",
+    "level": 3,
+    "session": 1,
+    "name": "Recycle Car",
+    "type": "ROBOT"
+  }
+]
