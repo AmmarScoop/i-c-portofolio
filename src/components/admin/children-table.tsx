@@ -10,7 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Download, GraduationCap, Award, Trash2, AlertTriangle } from "lucide-react";
+import { Download, GraduationCap, Award, Trash2, AlertTriangle, KeyRound } from "lucide-react";
 import { TRACK_LABELS } from "@/lib/utils";
 
 type ChildRow = {
@@ -55,6 +55,7 @@ export function ChildrenTable({
   const [badgeId, setBadgeId] = useState("");
   const [bulkLoading, setBulkLoading] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [loginOpen, setLoginOpen] = useState(false);
 
   const allSelected = children.length > 0 && selected.size === children.length;
   const selectedIds = useMemo(() => Array.from(selected), [selected]);
@@ -125,6 +126,23 @@ export function ChildrenTable({
     router.refresh();
   }
 
+  async function handleBulkLogins() {
+    setBulkLoading(true);
+    let ok = 0, failed = 0;
+    for (const childId of selectedIds) {
+      const res = await fetch(`/api/children/${childId}/create-login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "{}",
+      });
+      res.ok ? ok++ : failed++;
+    }
+    setBulkLoading(false);
+    setLoginOpen(false);
+    toast.success(`Logins ready for ${ok} children${failed ? ` (${failed} failed)` : ""}. Use "Export to Excel" to get the credentials.`, { duration: 8000 });
+    router.refresh();
+  }
+
   async function handleBulkDelete() {
     setBulkLoading(true);
     let ok = 0, failed = 0;
@@ -178,6 +196,26 @@ export function ChildrenTable({
                 </Select>
                 <DialogFooter>
                   <Button onClick={handleBulkBadge} disabled={bulkLoading || !badgeId}>{bulkLoading ? "Awarding..." : "Award Badge"}</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            <Dialog open={loginOpen} onOpenChange={setLoginOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm" variant="outline"><KeyRound className="h-4 w-4 mr-1" /> Create Logins</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader><DialogTitle>Create logins for {selected.size} {selected.size === 1 ? "child" : "children"}?</DialogTitle></DialogHeader>
+                <p className="text-sm text-muted-foreground">
+                  Each selected child gets a login for the child dashboard (email based on their name, default
+                  password). Children who already have a login get it <strong>reset</strong>. Afterward, use
+                  "Export to Excel" on the same selection — the sheet includes each child's login email and password.
+                </p>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setLoginOpen(false)} disabled={bulkLoading}>Cancel</Button>
+                  <Button onClick={handleBulkLogins} disabled={bulkLoading}>
+                    {bulkLoading ? "Creating..." : "Create Logins"}
+                  </Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
