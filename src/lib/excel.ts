@@ -18,6 +18,13 @@ export const CHILD_TEMPLATE_COLUMNS = [
   "preferredTrack",
   "skillLevel",
   "notes",
+  // Optional enrollment position: if courseName is filled, the child is
+  // enrolled in that course at the given level, and every session BEFORE
+  // (levelNumber, sessionNumber) is auto-marked PRESENT — e.g. a child at
+  // Level 2 / Session 1 gets attendance for all Level 1 sessions.
+  "courseName",
+  "levelNumber",
+  "sessionNumber",
 ] as const;
 
 /** Builds the downloadable .xlsx template admins fill in to bulk-import children. */
@@ -36,6 +43,9 @@ export function buildChildImportTemplate(): Buffer {
     preferredTrack: "ROBOTICS",
     skillLevel: "BEGINNER",
     notes: "Interested in robotics",
+    courseName: "Lego - WeDo",
+    levelNumber: 2,
+    sessionNumber: 1,
   };
 
   const ws = XLSX.utils.json_to_sheet([sampleRow], { header: headerRow as unknown as string[] });
@@ -82,6 +92,9 @@ export function parseChildImportFile(buffer: ArrayBuffer): ParsedChildRow[] {
       preferredTrack: String(row.preferredTrack ?? "").trim().toUpperCase(),
       skillLevel: String(row.skillLevel ?? "").trim().toUpperCase(),
       notes: String(row.notes ?? "").trim(),
+      courseName: String(row.courseName ?? "").trim(),
+      levelNumber: row.levelNumber,
+      sessionNumber: row.sessionNumber,
     };
 
     const result = childImportRowSchema.safeParse(normalized);

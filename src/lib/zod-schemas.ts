@@ -81,6 +81,16 @@ export const childImportRowSchema = z.object({
   preferredTrack: z.enum(["ROBOTICS", "PROGRAMMING", ""]).optional(),
   skillLevel: z.enum(["BEGINNER", "INTERMEDIATE", "ADVANCED", ""]).optional(),
   notes: z.string().optional(),
+  // Optional enrollment position (see CHILD_TEMPLATE_COLUMNS in lib/excel.ts).
+  courseName: z.string().optional(),
+  levelNumber: z.preprocess(
+    (v) => (v === "" || v == null ? undefined : v),
+    z.coerce.number().int().min(1, "levelNumber must be >= 1").optional()
+  ),
+  sessionNumber: z.preprocess(
+    (v) => (v === "" || v == null ? undefined : v),
+    z.coerce.number().int().min(1, "sessionNumber must be >= 1").optional()
+  ),
 });
 
 // ---------- Child Notes ----------
